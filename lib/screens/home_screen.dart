@@ -41,84 +41,114 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: provider.refreshDestinations,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const Text(
-              'Jelajahi Dunia!',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF173B57),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Temukan inspirasi destinasi wisata impianmu.',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isWide = constraints.maxWidth >= 700;
 
-            // Banner utama
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF173B57),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Petualangan Baru Menantimu',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            final destinations = provider.destinations.take(20).toList();
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    const Text(
+                      'Jelajahi Dunia!',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF173B57),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Cari tempat baru, simpan favoritmu, '
-                    'dan rencanakan perjalanan berikutnya.',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Temukan inspirasi destinasi wisata impianmu.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Banner utama
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF173B57),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Petualangan Baru Menantimu',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Cari tempat baru, simpan favoritmu, '
+                            'dan rencanakan perjalanan berikutnya.',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    const Text(
+                      'Rekomendasi Destinasi',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF173B57),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    if (provider.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(30),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (provider.errorMessage != null)
+                      _buildError(provider.errorMessage!)
+                    else if (destinations.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: Text('Belum ada data destinasi.')),
+                      )
+                    else if (isWide)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: destinations.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 0,
+                              childAspectRatio: 4.0,
+                            ),
+                        itemBuilder: (context, index) {
+                          return DestinationCard(
+                            destination: destinations[index],
+                          );
+                        },
+                      )
+                    else
+                      ...destinations.map(
+                        (destination) =>
+                            DestinationCard(destination: destination),
+                      ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            const Text(
-              'Rekomendasi Destinasi',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF173B57),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            if (provider.isLoading)
-              const Padding(
-                padding: EdgeInsets.all(30),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (provider.errorMessage != null)
-              _buildError(provider.errorMessage!)
-            else if (provider.destinations.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('Belum ada data destinasi.')),
-              )
-            else
-              ...provider.destinations
-                  .take(20)
-                  .map(
-                    (destination) => DestinationCard(destination: destination),
-                  ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -165,8 +195,6 @@ class DestinationCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
-
-        // Navigasi menuju halaman detail
         onTap: () {
           Navigator.push(
             context,
@@ -175,7 +203,6 @@ class DestinationCard extends StatelessWidget {
             ),
           );
         },
-
         leading: SizedBox(
           width: 75,
           child: destination.flagUrl.isNotEmpty
@@ -187,14 +214,11 @@ class DestinationCard extends StatelessWidget {
                 )
               : const Icon(Icons.landscape),
         ),
-
         title: Text(
           destination.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-
         subtitle: Text('${destination.region} • ${destination.capital}'),
-
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       ),
     );
